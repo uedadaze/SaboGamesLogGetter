@@ -927,7 +927,7 @@
     header.className = 'saboten-sidebar-header';
     const title = document.createElement('h3');
     title.className = 'saboten-sidebar-title';
-    title.textContent = 'SabotennGamesLogGetter';
+    title.textContent = 'SaboGamesLogGetter v1.01';
     header.appendChild(title);
     sidebar.appendChild(header);
 
