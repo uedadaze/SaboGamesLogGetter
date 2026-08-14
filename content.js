@@ -2354,9 +2354,6 @@
             }
             .post-body img {
                 max-width: 100%;
-                height: auto;
-                border-radius: 4px;
-                margin-top: 5px;
             }
             .reply-to {
                 margin: 2px 0 4px 0;
