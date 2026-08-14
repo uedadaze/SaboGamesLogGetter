@@ -7,7 +7,7 @@
     "activeTab"
   ],
   "host_permissions": [
-    "https://metropolis-c.sakura.ne.jp/*"
+     "<all_urls>"
   ],
   "background": {
     "service_worker": "background.js"
