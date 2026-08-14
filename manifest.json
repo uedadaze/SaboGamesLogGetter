@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "SabotennGamesLogGetter",
+  "version": "1.0.0",
+  "description": "定期ゲームのチャットルームから投稿ログを収集・保存するツール",
+  "permissions": [
+    "activeTab"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://metropolis-c.sakura.ne.jp/teikigame/dragon1st/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
