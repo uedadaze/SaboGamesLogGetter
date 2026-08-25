@@ -600,6 +600,30 @@
             color: white;
         }
 
+        /* ダミーpost追加ボタン */
+        .saboten-org-btn-add-dummy {
+            background: linear-gradient(135deg, #e67e22, #d35400);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 14px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(230, 126, 34, 0.3);
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .saboten-org-btn-add-dummy:hover {
+            background: linear-gradient(135deg, #d35400, #c0392b);
+            box-shadow: 0 2px 12px rgba(230, 126, 34, 0.5);
+        }
+
+        .saboten-org-btn-add-dummy:active {
+            transform: scale(0.98);
+        }
+
         /* 操作パネル内のHTMLダウンロードボタン */
         .saboten-org-btn-download-panel {
             background: linear-gradient(135deg, #28a745, #218838);
@@ -927,7 +951,7 @@
     header.className = 'saboten-sidebar-header';
     const title = document.createElement('h3');
     title.className = 'saboten-sidebar-title';
-    title.textContent = 'SaboGamesLogGetter v1.01';
+    title.textContent = 'SaboGamesLogGetter v1.02';
     header.appendChild(title);
     sidebar.appendChild(header);
 
@@ -1454,6 +1478,21 @@
             if (em && postEl.id) {
                 const numericId = postEl.id.replace('post-', '');
                 em.textContent += ` (ID: ${numericId})`;
+            }
+
+            // 0. <details>タグを全て開いてから画像キャプチャを行う
+            //    閉じた<details>内の画像はビューポートに描画されないためキャプチャできない
+            const originalDetailsList = Array.from(postEl.querySelectorAll('details'));
+            const detailsOriginalStates = originalDetailsList.map(d => d.open);
+            originalDetailsList.forEach(d => { d.open = true; });
+
+            // クローン側の<details>も開いた状態にする（保存HTMLに展開状態を反映）
+            const clonedDetailsList = Array.from(clonedPost.querySelectorAll('details'));
+            clonedDetailsList.forEach(d => { d.open = true; });
+
+            // <details>を開いた後、描画が反映されるのを待つ
+            if (originalDetailsList.length > 0) {
+                await new Promise(r => setTimeout(r, 100));
             }
 
             // 元のDOM上の画像要素を chrome.tabs.captureVisibleTab でキャプチャする (非同期)
@@ -2018,8 +2057,46 @@
         row2.appendChild(saveNameBtn);
         row2.appendChild(downloadBtn);
 
+        // 3段目：ダミーpost追加（テキスト入力欄 ＋ 追加ボタン）
+        const row3 = document.createElement('div');
+        row3.className = 'saboten-org-control-row';
+
+        const dummyInput = document.createElement('input');
+        dummyInput.type = 'text';
+        dummyInput.className = 'saboten-org-input';
+        dummyInput.placeholder = 'ダミーpostの本文を入力';
+
+        const addDummyBtn = document.createElement('button');
+        addDummyBtn.type = 'button';
+        addDummyBtn.className = 'saboten-org-btn-add-dummy';
+        addDummyBtn.textContent = 'ダミーpost追加';
+        addDummyBtn.addEventListener('click', async () => {
+            const text = dummyInput.value.trim();
+            if (!text) return;
+
+            const currentProj = getCurrentProject();
+            const dummyHtml = `<div class="post-content-area"><div class="post-body">${text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')}</div></div>`;
+
+            currentProj.items.push({
+                id: 'post-dummy',
+                html: dummyHtml,
+                addedAt: Date.now()
+            });
+
+            dummyInput.value = '';
+            await saveCurrentProjectsToDB();
+            renderOrganizerPanels();
+            // 右パネルを最下部までスクロール
+            const rc = document.getElementById('saboten-org-right-content');
+            if (rc) rc.scrollTop = rc.scrollHeight;
+        });
+
+        row3.appendChild(dummyInput);
+        row3.appendChild(addDummyBtn);
+
         controlPanel.appendChild(row1);
         controlPanel.appendChild(row2);
+        controlPanel.appendChild(row3);
         rightPanel.appendChild(controlPanel);
 
         const rightContent = document.createElement('div');
@@ -2164,6 +2241,9 @@
                 }
                 await saveCurrentProjectsToDB();
                 renderOrganizerPanels();
+                // 右パネルを最下部までスクロール
+                const rc = document.getElementById('saboten-org-right-content');
+                if (rc) rc.scrollTop = rc.scrollHeight;
             });
 
             card.appendChild(postContainer);
