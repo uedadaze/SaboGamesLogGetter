@@ -657,6 +657,30 @@
             box-sizing: border-box;
         }
 
+        /* 右パネルのスクロールバーを明示表示 */
+        .saboten-org-panel-right .saboten-org-panel-content {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.35) rgba(255, 255, 255, 0.05);
+        }
+
+        .saboten-org-panel-right .saboten-org-panel-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .saboten-org-panel-right .saboten-org-panel-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .saboten-org-panel-right .saboten-org-panel-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        .saboten-org-panel-right .saboten-org-panel-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
         /* 整理画面内でのログ項目のカードラッパー */
         .saboten-org-item-card {
             background: rgba(255, 255, 255, 0.04);
@@ -1945,6 +1969,9 @@
             });
             await saveCurrentProjectsToDB();
             renderOrganizerPanels();
+            // 右パネルを最下部までスクロール
+            const rc = document.getElementById('saboten-org-right-content');
+            if (rc) rc.scrollTop = rc.scrollHeight;
         });
 
         leftToolbar.appendChild(addAllLeftBtn);
