@@ -975,7 +975,7 @@
     header.className = 'saboten-sidebar-header';
     const title = document.createElement('h3');
     title.className = 'saboten-sidebar-title';
-    title.textContent = 'SaboGamesLogGetter v1.02';
+    title.textContent = 'SaboGamesLogGetter v1.03';
     header.appendChild(title);
     sidebar.appendChild(header);
 
@@ -1940,8 +1940,10 @@
         addAllLeftBtn.textContent = 'IDが小さいものから全て出力に追加';
         addAllLeftBtn.addEventListener('click', async () => {
             const currentProj = getCurrentProject();
-            const existingIdSet = new Set(currentProj.items.map(it => it.id));
-            const availableLogs = allSavedLogs.filter(log => !existingIdSet.has(log.id));
+            // 全プロジェクト横断で使用済みIDを収集
+            const allUsedIdSet = new Set();
+            logProjects.forEach(p => (p.items || []).forEach(it => allUsedIdSet.add(it.id)));
+            const availableLogs = allSavedLogs.filter(log => !allUsedIdSet.has(log.id));
             if (availableLogs.length === 0) {
                 alert('追加可能な収集済みログがありません。');
                 return;
@@ -1958,13 +1960,13 @@
             });
 
             sorted.forEach(log => {
-                if (!existingIdSet.has(log.id)) {
+                if (!allUsedIdSet.has(log.id)) {
                     currentProj.items.push({
                         id: log.id,
                         html: log.html,
                         addedAt: log.addedAt || Date.now()
                     });
-                    existingIdSet.add(log.id);
+                    allUsedIdSet.add(log.id);
                 }
             });
             await saveCurrentProjectsToDB();
@@ -2013,10 +2015,25 @@
         newProjBtn.className = 'saboten-org-btn-new-proj';
         newProjBtn.textContent = '新規ログ作成';
         newProjBtn.addEventListener('click', async () => {
+            const inputName = prompt('新規ログの名前を入力してください:', '新規ログ');
+            if (inputName === null) return; // キャンセル
+            const baseName = inputName.trim() || '新規ログ';
+
+            // 重複名の連番処理
+            const existingNames = new Set(logProjects.map(p => p.name));
+            let finalName = baseName;
+            if (existingNames.has(finalName)) {
+                let counter = 2;
+                while (existingNames.has(`${baseName} - ${counter}`)) {
+                    counter++;
+                }
+                finalName = `${baseName} - ${counter}`;
+            }
+
             const newId = 'proj_' + Date.now();
             logProjects.push({
                 id: newId,
-                name: '新規ログ',
+                name: finalName,
                 items: []
             });
             currentProjectId = newId;
@@ -2218,7 +2235,9 @@
         if (!leftContent || !rightContent) return;
 
         const currentProj = getCurrentProject();
-        const existingIdSet = new Set(currentProj.items.map(it => it.id));
+        // 全プロジェクト横断で使用済みIDを収集（左パネルから除外するため）
+        const allUsedIdSet = new Set();
+        logProjects.forEach(p => (p.items || []).forEach(it => allUsedIdSet.add(it.id)));
 
         // 1. 操作パネルのUI同期
         if (projSelect) {
@@ -2241,8 +2260,8 @@
         leftContent.innerHTML = '';
         rightContent.innerHTML = '';
 
-        // 2. 未選択ログ（左側候補: 現在のプロジェクトに含まれていないもの）の抽出
-        const availableLogs = allSavedLogs.filter(log => !existingIdSet.has(log.id));
+        // 2. 未選択ログ（左側候補: どのプロジェクトにも含まれていないもの）の抽出
+        const availableLogs = allSavedLogs.filter(log => !allUsedIdSet.has(log.id));
         const logsToDisplay = availableLogs.slice(0, organizerLeftDisplayLimit);
 
         // 左側パネルの描画
@@ -2259,7 +2278,9 @@
             moveBtn.className = 'saboten-org-action-btn saboten-org-btn-move';
             moveBtn.textContent = '保存項目に移行';
             moveBtn.addEventListener('click', async () => {
-                if (!currentProj.items.some(it => it.id === log.id)) {
+                // 現在のプロジェクトに既にある場合はスキップ（安全チェック）
+                const currentItemIds = new Set(currentProj.items.map(it => it.id));
+                if (!currentItemIds.has(log.id)) {
                     currentProj.items.push({
                         id: log.id,
                         html: log.html,
