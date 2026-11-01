@@ -981,7 +981,7 @@
     header.className = 'saboten-sidebar-header';
     const title = document.createElement('h3');
     title.className = 'saboten-sidebar-title';
-    title.textContent = 'SaboGamesLogGetter v1.1';
+    title.textContent = 'SaboGamesLogGetter v1.11';
     header.appendChild(title);
     sidebar.appendChild(header);
 
@@ -1572,6 +1572,10 @@
                     cloneImg.src = base64Src;
                 }
             }
+
+            clonedPost.querySelectorAll('.post-content-area a.bbs-custom-url').forEach(link => {
+                link.remove();
+            });
 
             // 4. 返信先（.reply-to）のリンク解除および引用プレビュー枠の生成
             const replyToParagraphs = Array.from(clonedPost.querySelectorAll('.reply-to, p.reply-to'));
