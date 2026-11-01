@@ -14,7 +14,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://metropolis-c.sakura.ne.jp/teikigame/dragon1st/*"],
+      "matches": ["https://metropolis-c.sakura.ne.jp/teikigame/dragon1st/*", "https://metropolis-c.sakura.ne.jp/teikigame/mc2opb/bbs.php*", "https://metropolis-c.sakura.ne.jp/teikigame/mc2opb/room.php*"],
       "js": ["content.js"],
       "run_at": "document_idle"
     }

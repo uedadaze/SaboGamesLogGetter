@@ -488,6 +488,12 @@
             border-color: #87cefa;
         }
 
+        .saboten-org-style-label {
+            color: #e0f7ff;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
         /* 新規ログ作成ボタン */
         .saboten-org-btn-new-proj {
             background: linear-gradient(135deg, #17a2b8, #117a8b);
@@ -975,7 +981,7 @@
     header.className = 'saboten-sidebar-header';
     const title = document.createElement('h3');
     title.className = 'saboten-sidebar-title';
-    title.textContent = 'SaboGamesLogGetter v1.03';
+    title.textContent = 'SaboGamesLogGetter v1.1';
     header.appendChild(title);
     sidebar.appendChild(header);
 
@@ -994,9 +1000,24 @@
     addAllBtn.textContent = 'ページ内の全投稿をID順に追加';
     addAllBtn.addEventListener('click', async () => {
         // サイドバー外の全投稿を取得
-        const posts = Array.from(document.querySelectorAll('.container .post'));
-        if (posts.length === 0) {
+        const allPosts = Array.from(document.querySelectorAll('.container .post'));
+        if (allPosts.length === 0) {
             alert('ページ内に投稿が見つかりませんでした。');
+            return;
+        }
+
+        const posts = allPosts.filter(post => {
+            const headings = post.querySelectorAll('.post-content-area > strong');
+            return !Array.from(headings).some(heading => {
+                return heading.textContent.trim() === '削除済み投稿'
+                    && Array.from(heading.parentElement.children).some(sibling =>
+                        sibling.tagName === 'P'
+                        && sibling.textContent.trim() === 'この投稿は削除されました。'
+                    );
+            });
+        });
+        if (posts.length === 0) {
+            alert('追加できる投稿が見つかりませんでした。');
             return;
         }
 
@@ -1494,6 +1515,18 @@
             if (actions) {
                 actions.remove();
             }
+
+            clonedPost.querySelectorAll('.post-content-area .bbs-pvp-recruitment .bbs-pvp-members').forEach(members => {
+                const spans = Array.from(members.querySelectorAll('span')).filter(span => {
+                    const parentSpan = span.parentElement.closest('span');
+                    return !parentSpan || !members.contains(parentSpan);
+                });
+                spans.slice(1).forEach(span => span.before(document.createTextNode('、')));
+            });
+
+            clonedPost.querySelectorAll('.post-content-area .bbs-pvp-recruitment form.bbs-pvp-join-form').forEach(form => {
+                form.remove();
+            });
 
             // ※ 3. id属性は削除せず保持する
 
@@ -2063,9 +2096,9 @@
         row1.appendChild(newProjBtn);
         row1.appendChild(deleteProjBtn);
 
-        // 下段：名称入力欄 ＋ 名前を保存ボタン ＋ HTMLとしてダウンロードボタン
-        const row2 = document.createElement('div');
-        row2.className = 'saboten-org-control-row';
+        // 3段目：名称入力欄 ＋ 名前を保存ボタン
+        const row3 = document.createElement('div');
+        row3.className = 'saboten-org-control-row';
 
         const nameInput = document.createElement('input');
         nameInput.type = 'text';
@@ -2091,19 +2124,12 @@
             }
         });
 
-        const downloadBtn = document.createElement('button');
-        downloadBtn.type = 'button';
-        downloadBtn.className = 'saboten-org-btn-download-panel';
-        downloadBtn.textContent = 'HTMLとしてダウンロード';
-        downloadBtn.addEventListener('click', exportToHTML);
+        row3.appendChild(nameInput);
+        row3.appendChild(saveNameBtn);
 
-        row2.appendChild(nameInput);
-        row2.appendChild(saveNameBtn);
-        row2.appendChild(downloadBtn);
-
-        // 3段目：ダミーpost追加（テキスト入力欄 ＋ 追加ボタン）
-        const row3 = document.createElement('div');
-        row3.className = 'saboten-org-control-row';
+        // 2段目：ダミーpost追加（テキスト入力欄 ＋ 追加ボタン）
+        const row2 = document.createElement('div');
+        row2.className = 'saboten-org-control-row';
 
         const dummyInput = document.createElement('input');
         dummyInput.type = 'text';
@@ -2135,12 +2161,42 @@
             if (rc) rc.scrollTop = rc.scrollHeight;
         });
 
-        row3.appendChild(dummyInput);
-        row3.appendChild(addDummyBtn);
+        row2.appendChild(dummyInput);
+        row2.appendChild(addDummyBtn);
+
+        // 4段目：ログスタイル選択 ＋ HTMLとしてダウンロードボタン
+        const row4 = document.createElement('div');
+        row4.className = 'saboten-org-control-row';
+
+        const styleSelect = document.createElement('select');
+        styleSelect.id = 'saboten-org-style-select';
+        styleSelect.className = 'saboten-org-select';
+        for (const [value, label] of [['A', 'スタイルA（ドラゴニカっぽい色合い）'], ['B', 'スタイルB（メトコリっぽい色合い）']]) {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = label;
+            styleSelect.appendChild(option);
+        }
+
+        const styleLabel = document.createElement('label');
+        styleLabel.className = 'saboten-org-style-label';
+        styleLabel.htmlFor = styleSelect.id;
+        styleLabel.textContent = 'ログのスタイル';
+
+        const downloadBtn = document.createElement('button');
+        downloadBtn.type = 'button';
+        downloadBtn.className = 'saboten-org-btn-download-panel';
+        downloadBtn.textContent = 'HTMLとしてダウンロード';
+        downloadBtn.addEventListener('click', () => exportToHTML(styleSelect.value));
+
+        row4.appendChild(styleLabel);
+        row4.appendChild(styleSelect);
+        row4.appendChild(downloadBtn);
 
         controlPanel.appendChild(row1);
         controlPanel.appendChild(row2);
         controlPanel.appendChild(row3);
+        controlPanel.appendChild(row4);
         rightPanel.appendChild(controlPanel);
 
         const rightContent = document.createElement('div');
@@ -2389,7 +2445,7 @@
     }
 
     // HTMLとして出力
-    function exportToHTML() {
+    function exportToHTML(style) {
         const currentProj = getCurrentProject();
 
         if (currentProj.items.length === 0) {
@@ -2527,6 +2583,39 @@
                 word-break: break-word;
                 white-space: pre-wrap;
             }
+            ${style === 'B' ? `
+            body {
+                background: radial-gradient(circle at center, #5c8cb5 0%, #142d4a 100%);
+            }
+            .log-container {
+                background: rgba(8, 29, 52, 0.92);
+                border-color: rgba(151, 206, 245, 0.35);
+            }
+            .log-title {
+                color: #b6e4ff;
+                border-bottom-color: rgba(151, 206, 245, 0.35);
+            }
+            .post {
+                background: rgba(76, 142, 194, 0.24);
+                border-color: rgba(151, 206, 245, 0.3);
+            }
+            .post strong, .post strong a {
+                color: #a9ddff;
+            }
+            .post em {
+                color: #b3cde0;
+            }
+            .saboten-reply-quote {
+                background: rgba(5, 23, 42, 0.55);
+                border-left-color: #89d3ff;
+            }
+            .saboten-reply-quote-header strong {
+                color: #a9ddff !important;
+            }
+            .saboten-reply-quote-header em {
+                color: #b3cde0 !important;
+            }
+            ` : ''}
         `;
 
         // 特殊文字エスケープヘルパー
